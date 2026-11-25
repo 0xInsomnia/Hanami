@@ -880,7 +880,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
   // On phones the room camera stays fixed unless the user moves it.
   const mobileCamera = () => window.matchMedia('(pointer: coarse), (max-width: 899px)').matches
   const renderer = new WebGLRenderer({ alpha: true, antialias: !mobileCamera() })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.matchMedia('(pointer: coarse)').matches ? 1.25 : 2))
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobileCamera() ? 1 : 2))
   renderer.outputColorSpace = SRGBColorSpace
   renderer.domElement.style.display = 'block'
   renderer.domElement.style.width = '100%'
@@ -908,7 +908,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
   const envGroup = new Group()
   scene.add(avatarGroup, envGroup)
 
-  const camera = new PerspectiveCamera(mobileCamera() ? 68 : 30, 1, 0.1, 20)
+  const camera = new PerspectiveCamera(mobileCamera() ? 82 : 30, 1, 0.1, 20)
   camera.position.set(...CAM_HOME_POS)
 
   // Lumière principale de face/haut + appoint doux (ne pas écraser le toon).
@@ -1186,7 +1186,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
    * précèdent le moindre bandeau d'erreur.
    */
   function resetView(): void {
-    camera.fov = mobileCamera() ? 68 : 30
+    camera.fov = mobileCamera() ? 82 : 30
     if (lastFrame) frameCamera(lastFrame.vrm, lastFrame.h)
     else {
       flushDamping()
@@ -2689,8 +2689,44 @@ export function createVrmStage(container: HTMLElement): VrmStage {
   // le moteur entier qui est en pause, et l'onglet caché en plus (visibilitychange).
   let paused = false
 
+  let contextLost = false
+  let lastRenderAt = 0
+  const graphicsStatus = document.createElement('div')
+  graphicsStatus.className = 'scene-graphics-status'
+  graphicsStatus.hidden = true
+  graphicsStatus.setAttribute('role', 'status')
+  const statusText = document.createElement('div')
+  statusText.textContent = 'Graphics paused. Trying to restore the 3D scene…'
+  const reload = document.createElement('button')
+  reload.className = 'btn'
+  reload.textContent = 'Reload 3D'
+  reload.onclick = () => window.location.reload()
+  graphicsStatus.append(statusText, reload)
+  container.appendChild(graphicsStatus)
+  function onContextLost(event: Event): void {
+    event.preventDefault()
+    contextLost = true
+    cancelAnimationFrame(rafId)
+    rafId = 0
+    graphicsStatus.hidden = false
+  }
+  function onContextRestored(): void {
+    contextLost = false
+    graphicsStatus.hidden = true
+    lastCanvasWidth = lastCanvasHeight = 0
+    resize()
+    clock.getDelta()
+    if (!disposed && !paused && !document.hidden && rafId === 0) tick()
+  }
+  renderer.domElement.addEventListener('webglcontextlost', onContextLost)
+  renderer.domElement.addEventListener('webglcontextrestored', onContextRestored)
+
   function tick(): void {
+    if (contextLost || disposed || paused || document.hidden) { rafId = 0; return }
     rafId = requestAnimationFrame(tick)
+    const now = performance.now()
+    if (mobileCamera() && now - lastRenderAt < 30) return
+    lastRenderAt = now
     const delta = Math.min(clock.getDelta(), 0.1)
     frameDelta = delta // lu par place() — le ressort vertical du corps
     if (mixer) {
@@ -2866,7 +2902,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
     loadEnvironment,
     resetView,
     zoomLens(step: number): void {
-      camera.fov = Math.min(105, Math.max(20, camera.fov + step * 10))
+      camera.fov = Math.min(110, Math.max(20, camera.fov + step * 10))
       camera.updateProjectionMatrix()
     },
 
@@ -3052,6 +3088,9 @@ export function createVrmStage(container: HTMLElement): VrmStage {
       // Le décor part AVANT le renderer : c'est lui qui porte le contexte WebGL
       // sur lequel les textures de la pièce sont libérées.
       unloadEnvironment()
+      renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
+      renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored)
+      graphicsStatus.remove()
       renderer.dispose()
       renderer.domElement.remove()
     },
