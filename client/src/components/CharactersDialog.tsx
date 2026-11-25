@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AnimationFamily, CharacterFull, CharacterLlm, CharacterMeta, GreetingMode, Settings } from '../../../shared/types'
 import * as api from '../api'
+import { saveLocalAvatar } from '../localAvatars'
 import { translate, useI18n } from '../i18n'
 import { THEMES, THEME_LABELS } from '../themes'
 import Dialog from './Dialog'
@@ -238,6 +239,8 @@ export default function CharactersDialog({
   // État initial du formulaire (création ou édition) — sert à détecter les saisies non enregistrées.
   const [initialForm, setInitialForm] = useState<FormState>(EMPTY_FORM)
   const [vrms, setVrms] = useState<string[]>([])
+  const [vrmBusy, setVrmBusy] = useState(false)
+  const vrmFileRef = useRef<HTMLInputElement>(null)
   const [bgs, setBgs] = useState<string[]>([])
   const [envs, setEnvs] = useState<string[]>([])
   // Modèles offerts par le backend (sonde du réglage global) — le menu des
@@ -376,6 +379,21 @@ export default function CharactersDialog({
   // ── Fond d'écran déposé depuis l'UI ────────────────────────────────────────
 
   /** Envoie l'image, recharge la liste des fonds et sélectionne le nouveau. */
+  async function addVrm(file: File) {
+    setVrmBusy(true)
+    setError(null)
+    try {
+      const url = await saveLocalAvatar(file)
+      setVrms((previous) => [...previous, url])
+      set('vrm', url)
+      setForm((previous) => previous.name.trim() ? previous : { ...previous, name: file.name.replace(/\.vrm$/i, '') })
+    } catch (e) {
+      setError(api.errorMessage(e))
+    } finally {
+      setVrmBusy(false)
+    }
+  }
+
   async function addBackground(file: File) {
     setBgBusy(true)
     setError(null)
@@ -621,7 +639,7 @@ export default function CharactersDialog({
             <button className="btn" onClick={backToList} disabled={busy}>
               {t('cancel')}
             </button>
-            <button className="btn primary" onClick={() => submit().catch((e) => console.error('[characters]', e))} disabled={busy}>
+            <button className="btn primary" onClick={() => submit().catch((e) => console.error('[characters]', e))} disabled={busy || vrmBusy}>
               {busy ? t('saving') : view.kind === 'create' ? t('create') : t('save')}
             </button>
           </>
@@ -693,6 +711,13 @@ export default function CharactersDialog({
                 options={fileOptions(t('noModel'), form.vrm, vrms)}
                 onChange={(v) => set('vrm', v)}
               />
+              <input ref={vrmFileRef} type="file" accept=".vrm,model/gltf-binary" hidden onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) void addVrm(file)
+              }} />
+              <button className="btn vrm-upload" type="button" disabled={vrmBusy || busy} onClick={() => vrmFileRef.current?.click()}>{vrmBusy ? 'Importing…' : '＋ Upload VRM'}</button>
+              <span className="hint">VRM 0.x / 1.0 · 50 MB max · stored only on this device</span>
             </div>
             <div className="field">
               <label htmlFor="char-bg">{t('background')}</label>
