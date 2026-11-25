@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: hanami-web-demo
+    runtime: node
+    plan: free
+    autoDeployTrigger: off
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: >-
+      node -e 'const fs=require("fs"); if(!process.env.DEMO_PASSWORD) throw new Error("Set DEMO_PASSWORD first"); fs.mkdirSync("data",{recursive:true}); fs.writeFileSync("data/config.json",JSON.stringify({backendUrl:"http://127.0.0.1:5199/v1",model:"mock-sakura",password:process.env.DEMO_PASSWORD}));' &&
+      (node scripts/mock-llm.cjs & exec npm start)
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: HOST
+        value: 0.0.0.0
+      - key: DEMO_PASSWORD
+        sync: false
