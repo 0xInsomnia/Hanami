@@ -122,6 +122,7 @@ async function main(): Promise<void> {
 
   if (IS_PROD) {
     const dist = path.join(ROOT, 'dist')
+    app.get('/download/hanami-local.html', (_req, res) => res.download(path.join(dist, 'Hanami-Local-v02.html'), 'Hanami-Local-v02.html'))
     app.use(express.static(dist))
     // Fallback SPA : tout sauf /api renvoie index.html.
     app.get('*', (req, res, next) => {
