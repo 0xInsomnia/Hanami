@@ -1,0 +1,19 @@
+{
+  "name": "Hanami mobile demo",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [
+    7788
+  ],
+  "portsAttributes": {
+    "5199": {
+      "label": "Internal mock LLM",
+      "onAutoForward": "ignore"
+    },
+    "7788": {
+      "label": "Hanami — open in browser",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "npm install && npm run build && node -e 'const fs=require(\"fs\"); fs.mkdirSync(\"data\",{recursive:true}); if(!fs.existsSync(\"data/config.json\")) fs.writeFileSync(\"data/config.json\",JSON.stringify({backendUrl:\"http://127.0.0.1:5199/v1\",model:\"mock-sakura\"},null,2));'",
+  "postStartCommand": "bash -c 'if ! curl -fsS http://127.0.0.1:5199/v1/models >/dev/null 2>&1; then nohup npm run mock-llm >/tmp/hanami-mock.log 2>&1 </dev/null & fi; if ! curl -fsS http://127.0.0.1:7788/ >/dev/null 2>&1; then nohup npm start >/tmp/hanami-app.log 2>&1 </dev/null & fi; true'"
+}
