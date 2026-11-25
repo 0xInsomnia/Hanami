@@ -3907,3 +3907,13 @@ a.credit-link {
     animation-duration: 0.01s !important;
   }
 }
+
+/* Keep the 3D canvas independent of the mobile keyboard and browser chrome.
+   The chat sheet can still resize independently of the world. */
+@media (pointer: coarse), (max-width: 899px) {
+  .scene {
+    bottom: auto;
+    height: 100vh;
+    height: 100lvh;
+  }
+}
