@@ -907,7 +907,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
   const envGroup = new Group()
   scene.add(avatarGroup, envGroup)
 
-  const camera = new PerspectiveCamera(30, 1, 0.1, 20)
+  const camera = new PerspectiveCamera(mobileCamera() ? 68 : 30, 1, 0.1, 20)
   camera.position.set(...CAM_HOME_POS)
 
   // Lumière principale de face/haut + appoint doux (ne pas écraser le toon).
@@ -1185,6 +1185,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
    * précèdent le moindre bandeau d'erreur.
    */
   function resetView(): void {
+    camera.fov = mobileCamera() ? 68 : 30
     if (lastFrame) frameCamera(lastFrame.vrm, lastFrame.h)
     else {
       flushDamping()
@@ -2173,7 +2174,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
    */
   function reframeAfterMixer(): void {
     reframePending = false
-    if (defaultFramed && lastFrame) frameCamera(lastFrame.vrm, lastFrame.h)
+    if (!mobileCamera() && defaultFramed && lastFrame) frameCamera(lastFrame.vrm, lastFrame.h)
   }
 
   // Normalisation d'échelle : un VRM exporté en centimètres (ou en unités
@@ -2224,6 +2225,8 @@ export function createVrmStage(container: HTMLElement): VrmStage {
     const head = vrm.humanoid.getNormalizedBoneNode('head')
     const headPos = new Vector3(0, h * (1.35 / 1.6), 0) // repli si modèle sans os "head"
     if (head) head.getWorldPosition(headPos)
+    // Frame the fixed spawn area, not the moving head, on phones.
+    if (mobileCamera() && envMetrics) headPos.set(0, h * 0.68, 0)
     // La distance : celle que le sidecar du décor demande (frameDistance), sinon
     // l'automatique dérivée de la tête. Les deux passent sous le MÊME clamp de
     // plausibilité en h — un modèle minuscule garde un cadrage à sa taille, quel
@@ -2249,7 +2252,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
     // pièce, nul au point d'accueil), pas sur la tête (dont la stance d'idle
     // avance de quelques millimètres) : à l'accueil, sans carte et scène vivante
     // éteinte, `framed` vaut `distance` — comme aujourd'hui, à l'octet près.
-    const advance = interactive ? Math.max(0, avatarGroup.position.z) : 0
+    const advance = interactive && !mobileCamera() ? Math.max(0, avatarGroup.position.z) : 0
     const framed =
       advance > 0
         ? Math.min(distance, Math.max(0.375 * h, Math.max(distance, envPullback() ?? 0) - advance))
@@ -2261,8 +2264,8 @@ export function createVrmStage(container: HTMLElement): VrmStage {
     // exactement 0 (la stance d'idle.vrma avance la tête de quelques
     // millimètres), et l'écrire sans garde changerait la distance de cadrage par
     // défaut de TOUS les modèles, scène vivante éteinte comprise.
-    const eyeY = headPos.y - 0.12
-    const baseZ = interactive ? headPos.z : 0
+    const eyeY = mobileCamera() ? h * 0.60 : headPos.y - 0.12
+    const baseZ = interactive && !mobileCamera() ? headPos.z : 0
     // Et le DERNIER mot sur le recul : le dégagement réel, sondé à la hauteur
     // réelle de l'objectif (cf. reculDegage). Rien au-dessus n'a jamais regardé
     // cette hauteur-là — ni la rose de la carte, mesurée à 1,30 m fixe, ni la
@@ -2859,6 +2862,10 @@ export function createVrmStage(container: HTMLElement): VrmStage {
     loadModel,
     loadEnvironment,
     resetView,
+    zoomLens(step: number): void {
+      camera.fov = Math.min(105, Math.max(20, camera.fov + step * 10))
+      camera.updateProjectionMatrix()
+    },
 
     setFrameMode(mode: FrameMode): void {
       frameMode = mode
