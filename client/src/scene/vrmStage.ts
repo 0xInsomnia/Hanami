@@ -876,7 +876,9 @@ function fadeWeights<A>(from: ReadonlyMap<A, number>, to: A, p: number): Map<A, 
 
 export function createVrmStage(container: HTMLElement): VrmStage {
   // ── Renderer : fond transparent (le fond visuel est géré par l'UI en CSS) ──
-  const renderer = new WebGLRenderer({ alpha: true, antialias: true })
+  // On phones the room camera stays fixed unless the user moves it.
+  const mobileCamera = () => window.matchMedia('(pointer: coarse), (max-width: 899px)').matches
+  const renderer = new WebGLRenderer({ alpha: true, antialias: !mobileCamera() })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.matchMedia('(pointer: coarse)').matches ? 1.25 : 2))
   renderer.outputColorSpace = SRGBColorSpace
   renderer.domElement.style.display = 'block'
@@ -1446,9 +1448,15 @@ export function createVrmStage(container: HTMLElement): VrmStage {
   window.addEventListener('keydown', onKeyZoom)
 
   // ── Taille : canvas 100 % du container (ResizeObserver + resize fenêtre) ──
+  let lastCanvasWidth = 0
+  let lastCanvasHeight = 0
   function resize(): void {
-    const w = Math.max(1, container.clientWidth)
-    const h = Math.max(1, container.clientHeight)
+    const w = container.clientWidth
+    const h = container.clientHeight
+    // Ignore transient zero-size layouts and duplicate resize events (Android IME).
+    if (w < 2 || h < 2 || (w === lastCanvasWidth && h === lastCanvasHeight)) return
+    lastCanvasWidth = w
+    lastCanvasHeight = h
     renderer.setSize(w, h, false)
     camera.aspect = w / h
     applyViewOffset() // le décentrement est en pixels : il suit la taille réelle
@@ -2199,7 +2207,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
   function applyViewOffset(): void {
     const w = Math.max(1, container.clientWidth)
     const h = Math.max(1, container.clientHeight)
-    const off = frameMode === 'left' && w >= CHAT_PANEL_MIN_W ? Math.round(panelWidth / 4) : 0
+    const off = frameMode === 'left' && !mobileCamera() && w >= CHAT_PANEL_MIN_W ? Math.round(panelWidth / 4) : 0
     // setViewOffset/clearViewOffset recalculent la matrice de projection.
     const cam = camera as unknown as ViewOffsetCamera
     if (off > 0) cam.setViewOffset(w, h, off, 0, w, h)
@@ -2786,7 +2794,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
   const kvStep = new Vector3()
 
   function keepInView(delta: number): void {
-    if (!currentVrm || camGrabbed || performance.now() - camReleasedAt < USER_CAMERA_GRACE_MS) {
+    if (mobileCamera() || !currentVrm || camGrabbed || performance.now() - camReleasedAt < USER_CAMERA_GRACE_MS) {
       hiddenFor = 0
       followShift = null
       return
@@ -2811,7 +2819,7 @@ export function createVrmStage(container: HTMLElement): VrmStage {
       hiddenFor = 0
       return
     }
-    const free = frameMode === 'left' ? Math.max(KEEP_EDGE_PX * 4, W - panelWidth) : W
+    const free = frameMode === 'left' && W >= CHAT_PANEL_MIN_W ? Math.max(KEEP_EDGE_PX * 4, W - panelWidth) : W
     const sx = ((kvProj.x + 1) / 2) * W
     const sy = ((1 - kvProj.y) / 2) * H
     const hidden = sx > free - KEEP_EDGE_PX || sx < KEEP_EDGE_PX || sy < 0 || sy > H
