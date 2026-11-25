@@ -41,6 +41,7 @@ import type { AnimationFamily, Emotion } from '../../../shared/types'
 import { GESTURE_CLIP_STEMS, GESTURE_STEMS, GESTURE_TAGS } from '../../../shared/gestures'
 import type { GestureTag } from '../../../shared/gestures'
 import { getVrmAnimations } from '../api'
+import { isLocalAvatar, localAvatarBlob } from '../localAvatars'
 // Les erreurs de cette scène remontent TELLES QUELLES à l'écran (bandeaux de
 // App.tsx) : elles se traduisent, comme celles de la couche API.
 import { translate } from '../i18n'
@@ -2624,7 +2625,9 @@ export function createVrmStage(container: HTMLElement): VrmStage {
       return
     }
     try {
-      const gltf = await loader.loadAsync(url)
+      const gltf = isLocalAvatar(url)
+        ? await loader.parseAsync(await (await localAvatarBlob(url)).arrayBuffer(), '')
+        : await loader.loadAsync(url)
       const vrm = gltf.userData.vrm as VRM | undefined
       if (!vrm) {
         // Un .glb quelconque posé comme modèle de personnage : la scène est déjà
