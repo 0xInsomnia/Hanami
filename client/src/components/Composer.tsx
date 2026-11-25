@@ -369,6 +369,7 @@ export default function Composer({
     // Commande complète → interceptée, jamais envoyée au modèle. Un « /xyz »
     // inconnu part comme du texte normal : seules NOS commandes sont happées.
     dropDictation()
+    if (window.matchMedia('(pointer: coarse)').matches) taRef.current?.blur()
     const cmd = COMMAND_RE.exec(value)
     if (cmd) onCommand(canonical(cmd[1]), (cmd[2] ?? '').trim())
     else onSend(value, shots)
