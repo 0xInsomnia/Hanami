@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "mock-llm": "node scripts/mock-llm.cjs",
     "test:restore": "tsx scripts/test-restore.ts",
-    "env:scene": "tsx scripts/env-scene.ts"
+    "env:scene": "tsx scripts/env-scene.ts",
+    "prebuild": "node scripts/install-demo-avatar.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "^3.1.0",
