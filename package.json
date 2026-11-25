@@ -13,7 +13,8 @@
     "mock-llm": "node scripts/mock-llm.cjs",
     "test:restore": "tsx scripts/test-restore.ts",
     "env:scene": "tsx scripts/env-scene.ts",
-    "prebuild": "node scripts/install-demo-avatar.mjs"
+    "prebuild": "node scripts/install-demo-avatar.mjs",
+    "postbuild": "node scripts/build-standalone.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "^3.1.0",
