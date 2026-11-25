@@ -9,5 +9,6 @@
     "[happy] Tiens, bonjour ! Moi c'est Hana. Je parle français aussi bien que l'anglais — écris-moi dans la langue que tu préfères.",
     "[relaxed] Hey! Hana here. It's quiet today, so you have my full attention. What's on your mind?"
   ],
-  "createdAt": "2026-07-30T00:00:00.000Z"
+  "createdAt": "2026-07-30T00:00:00.000Z",
+  "environment": "/environments/cozy-loft-room.glb"
 }
