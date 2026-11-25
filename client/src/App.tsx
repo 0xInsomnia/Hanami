@@ -71,11 +71,6 @@ const QUOTE_MAX = 200
 // redémarre coupe la requête sans que rien ne soit cassé — inutile d'annoncer
 // une erreur au premier échec.
 const VRM_RETRY_DELAYS_MS: readonly number[] = [1000, 3000]
-// Seuil du « grand écran », repris à l'identique de styles.css (@media 900px) :
-// au-delà, le chat est une colonne à droite et la scène a de la place ; en
-// dessous, c'est une feuille basse et il ne reste qu'un bandeau. La scène vivante
-// (déplacement dans le décor) est réservée à ce cas-là — décision du propriétaire.
-const WIDE_SCREEN_QUERY = '(min-width: 900px)'
 // Astuce des interactions 3D : durée de vie totale à l'écran, fondus compris.
 // DOIT rester la durée de l'animation `scene-hint` de styles.css (8,5 s), au
 // tour de roue près — c'est le CSS qui fait le fondu, ce délai ne fait que
@@ -259,16 +254,11 @@ function AppInner() {
   const [env3d, setEnv3d] = useState(() => getPref('env3d') !== false)
   // Animations gestuelles (.vrma) : même grammaire que le décor.
   const [vrmaEnabled, setVrmaEnabled] = useState(() => getPref('vrmaEnabled') !== false)
-  // Scène vivante : OPT-IN STRICT (`=== true`), contrairement aux deux au-dessus.
-  const [interactive, setInteractive] = useState(() => getPref('interactive') === true)
+  // Mobile demo: living scene enabled by default, unless the user turns it off.
+  const [interactive, setInteractive] = useState(() => getPref('interactive') !== false)
   // L'astuce des interactions 3D est-elle à l'écran ? Vraie au plus une fois par
   // installation (cf. l'effet qui la pose, et la préférence hint3dSeen).
   const [hint3d, setHint3d] = useState(false)
-  // Grand écran ? C'est la MÊME borne que le CSS (styles.css, @media 900px), celle
-  // qui décide si le chat est une colonne ou une feuille basse. Décision du
-  // propriétaire : pas d'interaction 3D sur mobile — l'interrupteur reste visible
-  // mais grisé, et la préférence n'est pas touchée (elle suit l'utilisateur).
-  const [wideScreen, setWideScreen] = useState(() => window.matchMedia(WIDE_SCREEN_QUERY).matches)
   // Largeur de la colonne de chat (poignée de redimensionnement). L'affichage,
   // lui, ne passe pas par ici : layout.ts pose la variable CSS. Cet état ne sert
   // qu'à tenir la scène 3D au courant (cadrage 'left').
@@ -715,21 +705,11 @@ function AppInner() {
     if (stageReady) stageRef.current?.setPaused(!avatarVisible)
   }, [stageReady, avatarVisible])
 
-  // Taille d'écran : la scène vivante s'éteint et se rallume au redimensionnement
-  // DANS LES DEUX SENS, sans jamais toucher à la préférence — brancher un
-  // téléphone sur un écran ne doit pas effacer un réglage fait au bureau.
-  useEffect(() => {
-    const mq = window.matchMedia(WIDE_SCREEN_QUERY)
-    const onChange = () => setWideScreen(mq.matches)
-    mq.addEventListener('change', onChange)
-    onChange()
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
 
-  // Scène vivante : la préférence ET la place à l'écran. Les animations
+  // Scène vivante : disponible sur mobile et desktop. Les animations
   // gestuelles en sont le socle (sans .vrma, aucun clip de marche) — les couper
   // coupe donc aussi la scène vivante, sans rien effacer.
-  const sceneLive = interactive && wideScreen && vrmaEnabled
+  const sceneLive = interactive && vrmaEnabled
   useEffect(() => {
     stageRef.current?.setInteractive(sceneLive)
   }, [sceneLive, stageReady])
@@ -2348,8 +2328,8 @@ function AppInner() {
             setPref({ vrmaEnabled: on })
           }}
           interactive={interactive}
-          interactiveDisabled={!wideScreen || !vrmaEnabled}
-          interactiveReason={!wideScreen ? t('sceneLiveNoMobile') : !vrmaEnabled ? t('sceneLiveNoVrma') : ''}
+          interactiveDisabled={!vrmaEnabled}
+          interactiveReason={!vrmaEnabled ? t('sceneLiveNoVrma') : ''}
           onToggleInteractive={(on) => {
             setInteractive(on)
             setPref({ interactive: on })
