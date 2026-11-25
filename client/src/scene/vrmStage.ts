@@ -877,7 +877,7 @@ function fadeWeights<A>(from: ReadonlyMap<A, number>, to: A, p: number): Map<A, 
 export function createVrmStage(container: HTMLElement): VrmStage {
   // ── Renderer : fond transparent (le fond visuel est géré par l'UI en CSS) ──
   const renderer = new WebGLRenderer({ alpha: true, antialias: true })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.matchMedia('(pointer: coarse)').matches ? 1.25 : 2))
   renderer.outputColorSpace = SRGBColorSpace
   renderer.domElement.style.display = 'block'
   renderer.domElement.style.width = '100%'
