@@ -156,7 +156,7 @@ export function putSettings(patch: Partial<Settings>): Promise<SettingsView> {
 
 export async function getModels(): Promise<string[]> {
   const r = await req<{ models: string[] }>('GET', '/api/settings/models')
-  return [...r.models, ...(await listLocalAvatars().catch(() => []))]
+  return r.models
 }
 
 /** Teste un backend avec des valeurs de formulaire SANS les persister (champs absents = réglages enregistrés). */
@@ -561,7 +561,7 @@ export function applyRestore(stagedId: string): Promise<RestoreResult> {
 
 export async function getVrmModels(): Promise<string[]> {
   const r = await req<{ models: string[] }>('GET', '/api/vrm-models')
-  return r.models
+  return [...r.models, ...(await listLocalAvatars().catch(() => []))]
 }
 
 export async function getBackgrounds(): Promise<string[]> {
