@@ -1939,6 +1939,13 @@ function AppInner() {
         </button>
       )}
 
+      {stageReady && !vrmError && !!character?.vrm && avatarVisible && (
+        <div className="mobile-lens-controls" role="group" aria-label="Camera zoom">
+          <button type="button" aria-label="Zoom out" onClick={() => stageRef.current?.zoomLens(1)}>−</button>
+          <button type="button" aria-label="Zoom in" onClick={() => stageRef.current?.zoomLens(-1)}>+</button>
+        </div>
+      )}
+
       {vrmError && (
         <div
           className="banner"
