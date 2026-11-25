@@ -148,6 +148,8 @@ export interface VrmStage {
    * modèle n'est chargé.
    */
   resetView(): void
+  /** Change field of view without moving the camera through the room. */
+  zoomLens(step: number): void
   /**
    * Cadrage modifié par l'utilisateur (drag/molette/pincement) → view, ou
    * réinitialisé (double-clic, resetView) → null. Sert à persister la préférence.
