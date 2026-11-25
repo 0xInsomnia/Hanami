@@ -246,7 +246,7 @@ function AppInner() {
   const [context, setContext] = useState<ContextInfo | null>(null)
   const [compacting, setCompacting] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const [vnMode, setVnMode] = useState(() => getPref('vnMode') === true)
+  const [vnMode, setVnMode] = useState(() => getPref('vnMode') ?? window.matchMedia('(pointer: coarse), (max-width: 899px)').matches)
   // Avatar visible : allumé par défaut (clé absente = visible, comportement
   // d'origine) ; masqué, le chat prend toute la largeur et le moteur se pause.
   const [avatarVisible, setAvatarVisible] = useState(() => getPref('avatarVisible') !== false)
@@ -1940,9 +1940,16 @@ function AppInner() {
       )}
 
       {stageReady && !vrmError && !!character?.vrm && avatarVisible && (
-        <div className="mobile-lens-controls" role="group" aria-label="Camera zoom">
+        <div className="mobile-lens-controls" role="group" aria-label="Mobile scene controls">
+          <button type="button" aria-label="Characters" title="Characters" onClick={() => setDialog('characters')}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>
+          </button>
+          <button type="button" aria-label="Reset camera" title="Reset camera" onClick={() => stageRef.current?.resetView()}>⟲</button>
           <button type="button" aria-label="Zoom out" onClick={() => stageRef.current?.zoomLens(1)}>−</button>
           <button type="button" aria-label="Zoom in" onClick={() => stageRef.current?.zoomLens(-1)}>+</button>
+          <button type="button" aria-label={collapsed ? 'Show chat' : 'Hide chat'} title={collapsed ? 'Show chat' : 'Hide chat'} onClick={() => setCollapsed((c) => !c)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h16v12H9l-5 4z"/>{collapsed && <path d="M8 10h8"/>}</svg>
+          </button>
         </div>
       )}
 
