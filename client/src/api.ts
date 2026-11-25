@@ -20,6 +20,7 @@ import type {
 import type { EnvironmentCredit } from '../../shared/credits'
 import { serverErrorText, translate as t } from './i18n'
 import type { ErrorParams } from '../../shared/errorCodes'
+import { listLocalAvatars } from './localAvatars'
 
 const TOKEN_KEY = 'hanami_token'
 
@@ -155,7 +156,7 @@ export function putSettings(patch: Partial<Settings>): Promise<SettingsView> {
 
 export async function getModels(): Promise<string[]> {
   const r = await req<{ models: string[] }>('GET', '/api/settings/models')
-  return r.models
+  return [...r.models, ...(await listLocalAvatars().catch(() => []))]
 }
 
 /** Teste un backend avec des valeurs de formulaire SANS les persister (champs absents = réglages enregistrés). */
